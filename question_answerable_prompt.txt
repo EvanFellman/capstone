@@ -1,0 +1,2 @@
+Notes: {notes}
+Is "{question}" fully answerable using only the notes from above? Reply with exactly one word on the next line. Either write "yes" or "no"

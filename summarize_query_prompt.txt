@@ -1,0 +1,3 @@
+Google query: {query}
+Google search results: {results}
+Summarize the new information retrieved from the Google search on the line below. Only include the information that answers the query. Use exactly one full sentence.

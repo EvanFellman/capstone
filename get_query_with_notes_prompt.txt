@@ -1,0 +1,4 @@
+Question: {question}
+Knowledge: {notes}
+We need to answer the question. Write a google query that will expand our knowledge to be better able to answer the question. Ask for only one small piece of information at a time.
+Query:

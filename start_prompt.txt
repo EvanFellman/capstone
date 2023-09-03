@@ -1,0 +1,2 @@
+Write a google query to answer the question: "{question}" Ask one query at a time.
+Query:

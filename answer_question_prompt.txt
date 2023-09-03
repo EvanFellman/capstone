@@ -1,0 +1,3 @@
+Question: {question}
+Knowledge: {notes}
+Answer the question using the knowledge on the line below. Answer in a complete thought.
