@@ -18,8 +18,10 @@ df = pd.DataFrame.from_dict(data_json)
 pipe = pipeline("question-answering", model="deepset/roberta-base-squad2")
 openai.api_key = os.getenv("OPENAI_API_KEY")
 chatgpt = not args.local
-
 example_query = df['question'][0]
+
+print(df["supporting_facts"].head())
+exit()
 
 # Initialize the model
 generator = None
@@ -52,7 +54,7 @@ while not ready:
     response = generator(prompt, max_length = 200, temperature=0.75, do_sample=True, top_k=100, top_p=0.95, repetition_penalty=1, num_return_sequences=1)[0]['generated_text']
     query = response.split("\n")[-1].split("Query:")[-1].strip()
 
-    print(f"LLM Query: Get first paragraph!")
+    print(f"LLM Query: {example_query} -> {query}")
     title, paragraph = next(article_iter, ["END OF THE STORY", "STOP"])
 
     print(f"  Answer: " + title + ": " + "".join(paragraph))
@@ -77,7 +79,7 @@ while not ready:
     notes.append(title + ": " + "".join(paragraph))
     answer_to_question = pipe({'question': example_query, 'context': "\n".join(notes)})
     if answer_to_question['score'] >= args.threshold:
-        print(f'Answer: {answer_to_question["answer"]}')
+        print(f'Final Answer: {answer_to_question["answer"]}')
         exit()
 
 print("True Answer:", df['answer'][0])

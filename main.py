@@ -86,6 +86,9 @@ while not ready:
         else:
             print("  Not content yet...")
             answer_to_query = next_bing_result()
+            if answer_to_query is None:
+                print("  No more Bing results!")
+                break
             query_answer = pipe({'question': query, 'context': answer_to_query})
             print(f"  Response: {answer_to_query}")
     
