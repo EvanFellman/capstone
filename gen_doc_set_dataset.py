@@ -1,5 +1,5 @@
 import argparse
-argparser = argparse.ArgumentParser(description="Demo")
+argparser = argparse.ArgumentParser(description="Generate the dataset to train retriever")
 argparser.add_argument('--good', help="Use good supporting facts?", action='store_true')
 argparser.add_argument('--hotpot', help="Location of hotpot data", type=str, required=True)
 argparser.add_argument('--sentence', help="Use sentence examples?", action='store_true')
@@ -19,6 +19,7 @@ Currently, we just use the uniform distribution to sample size of documents
 import os
 if not os.path.isfile(args.hotpot):
     print(f"Can't find hotpot file: {args.hotpot}")
+    exit()
 #Used: https://huggingface.co/transformers/v2.8.0/usage.html
 # to learn how to extract the answer
 import tqdm
@@ -113,7 +114,6 @@ for question_idx in tqdm.tqdm(range(min(args.num_questions, len(hotpot_df)))):
             v = round((torch.softmax(answer_start_scores, dim=1)[0, s] * torch.softmax(answer_end_scores, dim=1)[0, e] * 100).item(), 2)
             if v > best_v:
                 best_s, best_e, best_v = s, e, v
-
         correct_score = 0
         if len(ranges) > 0:
             correct_score = best_v
