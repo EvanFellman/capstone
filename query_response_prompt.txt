@@ -1,3 +1,0 @@
-Google query: {query}
-Google results: {results}
-Did this answer the query? Reply with exactly one word on the next line. Either write "yes" or "no"
