@@ -153,10 +153,8 @@ def generate(
     message,
     tokenizer,
     max_new_tokens=1024,
-    temperature=0.6,
-    top_p=0.9,
-    top_k=50,
-    repetition_penalty=1.2,
+    temperature=0.3,
+    repetition_penalty=1,
     max_input_token_length=4096,
 ):
     input_ids = tokenizer.apply_chat_template([{"role": "user", "content": message}], return_tensors="pt")
@@ -171,8 +169,6 @@ def generate(
             "streamer": streamer,
             "max_new_tokens": max_new_tokens,
             "do_sample": True,
-            "top_p": top_p,
-            "top_k": top_k,
             "temperature": temperature,
             "num_beams": 1,
             "repetition_penalty": repetition_penalty,
@@ -193,7 +189,7 @@ def get_confidence(question, context, note):
     else:
         note = note + " " + context
 
-    get_confidence_prompt = f'Now you have a question-answering task. \nThe question is: {question}\nThe notes you have made so far includes: {note}\nEither answer the question or write "N/A" if you think the question is not answerable. \nAnswer:'
+    get_confidence_prompt = f'{note}\nEither answer the question below or write the exact phrase "need more information" to receive more information.\n{question} Write step by step and leave the answer until the end. Either the answer or "need more information":'
 
     is_answerable = generate(get_confidence_prompt, llama2_tokenizer)
 
@@ -201,6 +197,13 @@ def get_confidence(question, context, note):
         is_answerable.lower().find("n/a") >= 0
         or is_answerable.lower().find("apologize") >= 0
         or is_answerable.lower().find("not answerable") >= 0
+        or is_answerable.lower().find("more information") >= 0
+        or is_answerable.lower().find("does not provide") >= 0
+        or is_answerable.lower().find("no mention") >= 0
+        or is_answerable.lower().find("help") >= 0
+        or is_answerable.lower().find("cannot determine") >= 0
+        or is_answerable.lower().find("clarification") >= 0
+        or is_answerable.lower()[-1] == "?"
     ):
         return False, note
     else:
@@ -231,12 +234,23 @@ def retrieve_document_next():
 
 
 def llama2_pipeline(question):
-    start_prompt = f'Write a query which will be the input to question answer retrieval machine learning pipeline to answer the question: "{question}". Please ask one query at a time and respond with the query only! \nQuery:'
+    start_prompt = f'Write one Google query to gather more information to answer the question: "{question}". Please ask one query at a time and respond with ONLY the query! \nQuery:'
     query = generate(start_prompt.format(question=question), llama2_tokenizer)
+    if query.startswith("Sure") or query.startswith(" Sure") or query.startswith("\tSure"):
+        marks = ["?", ".", "!", ":", ";"]
+        mark_count = 0
+        for i, q in enumerate(query):
+            if q in marks:
+                mark_count += 1
+                if mark_count == 2:
+                    query = query[i+1:]
+                    break
+    print(f"Query: |{query}|ENDQUERY")
     context = retrieve_document(query)
     note = "The note file is empty right now."
     answerable, note = get_confidence(question, context, note)
     attempts_left = 5
+    count = 1
     while answerable == False:
         context = retrieve_document_next()
         if len(context) == 0:
@@ -244,19 +258,35 @@ def llama2_pipeline(question):
                 answerable = False
                 break
             else:
-                new_query_prompt = f'NOTES: {note}\nWrite a query which will be the input to question answer retrieval machine learning pipeline to expand your knowledge to answer the question: "{question}". You already know the above notes. Please ask one query at a time and respond with the query only! \nQuery:'
+                new_query_prompt = f'NOTES: {note}\nWrite a Google query to expand your knowledge to answer the question: "{question}". You already know the above notes. Please ask one query at a time and respond with the query only! A good Google query asks for only one small part of a question at a time.\nQuery:'
                 query = generate(
                     new_query_prompt.format(question=question),
                     llama2_tokenizer,
                 )
+                print(f"Query: |{query}|ENDQUERY")
+                if query.startswith("Sure") or query.startswith(" Sure"):
+                    marks = ["?", ".", "!", ":", ";"]
+                    mark_count = 0
+                    for i, q in enumerate(query):
+                        if q in marks:
+                            mark_count += 1
+                            if mark_count == 2:
+                                query = query[i+1:]
+                                break
                 context = retrieve_document(query)
                 attempts_left -= 1
         answerable, note = get_confidence(question, context, note)
+        count += 1
+    print(count)
 
     # qa_prompt = f"With all the information gathered, please answer the following question:\n{question}"
-    qa_prompt = "Given the notes:" + note + f"Please answer the question: {question}"
-
+    get_confidence_prompt = f'{note}\nAnswer the question below.\n{question} Write step by step and leave the answer until the end:'
     final_answer = answerable
+
+    if answerable == False:
+        get_confidence_prompt = f'{note}\n{question}'
+
+        final_answer = generate(get_confidence_prompt, llama2_tokenizer)
     return final_answer
 
 
@@ -266,14 +296,20 @@ df["answer"] = []
 df["final_answer"] = []
 
 for question, answer in zip(hotpot_df_test["question"], hotpot_df_test["answer"]):
+    guess = llama2_pipeline(question)
     print("Question:", question)
     print("Answer:", answer)
-    print("Final answer:", llama2_pipeline(question))
+    print("Final answer:", guess)
     df["question"].append(question)
     df["answer"].append(answer)
-    df["final_answer"].append(llama2_pipeline(question))
+    df["final_answer"].append(guess)
     # save df using pandas
-    pd.DataFrame(df).to_csv("llama2_pipeline_answers.csv", index=False)
-    print("=========================================")
+
+
+
+    pd.DataFrame(df).to_csv("llama2_pipeline_answers_new.csv", index=False)
+    
+    
+    print("==================================================================================================")
 
 # print("Final answer:", llama2_pipeline("What government position was held by the woman who portrayed Corliss Archer in the film Kiss and Tell?"))
