@@ -74,7 +74,7 @@ model.to(device)
 
 with open(args.hotpot, 'rb') as f:
     data_json = json.load(f)
-    hotpot_df_test = pd.DataFrame.from_dict(data_json).iloc[500:1000]
+    hotpot_df_test = pd.DataFrame.from_dict(data_json).iloc[:500]
 
 count = 0
 retriever_index = faiss.IndexFlatIP(768)
@@ -282,7 +282,7 @@ for question, answer in zip(hotpot_df_test["question"], hotpot_df_test["answer"]
 
 
 
-    pd.DataFrame(df).to_csv("llama2_pipeline_answers_500.csv", index=False)
+    pd.DataFrame(df).to_csv("llama2_pipeline_answers_0.csv", index=False)
     
     
     print("==================================================================================================")
