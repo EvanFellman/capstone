@@ -180,7 +180,7 @@ def generate(
     for text in streamer:
         outputs.append(text)
 
-    return "".join(outputs)
+    return "".join(outputs).replace("\n", "")
 
 
 def get_confidence(question, context, note):
@@ -260,7 +260,7 @@ def llama2_pipeline(question):
             else:
                 new_query_prompt = f'NOTES: {note}\nWrite a Google query to expand your knowledge to answer the question: "{question}". You already know the above notes. Please ask one query at a time and respond with the query only! A good Google query asks for only one small part of a question at a time.\nQuery:'
                 query = generate(
-                    new_query_prompt.format(question=question),
+                    new_query_prompt,
                     llama2_tokenizer,
                 )
                 print(f"Query: |{query}|ENDQUERY")
@@ -295,7 +295,7 @@ df["question"] = []
 df["answer"] = []
 df["final_answer"] = []
 
-for question, answer in zip(hotpot_df_test["question"], hotpot_df_test["answer"]):
+for question, answer in zip(hotpot_df_test["question"][::-1], hotpot_df_test["answer"][::-1]):
     guess = llama2_pipeline(question)
     print("Question:", question)
     print("Answer:", answer)
@@ -307,7 +307,7 @@ for question, answer in zip(hotpot_df_test["question"], hotpot_df_test["answer"]
 
 
 
-    pd.DataFrame(df).to_csv("llama2_pipeline_answers_new.csv", index=False)
+    pd.DataFrame(df).to_csv("llama2_pipeline_answers_backwards.csv", index=False)
     
     
     print("==================================================================================================")
