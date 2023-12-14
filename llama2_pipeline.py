@@ -115,6 +115,7 @@ def retrieval_pipeline(question):
 
 
 ## Llama 2
+# Reference: https://huggingface.co/spaces/huggingface-projects/llama-2-7b-chat/blob/main/app.py
 # Raise error if not using GPU
 assert torch.cuda.is_available() == True
 
